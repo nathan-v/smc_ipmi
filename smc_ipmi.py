@@ -71,6 +71,9 @@ def parse_pminfo(pm_output: str, temp_unit: str):
             # load power module index
             module = re.search("\[Module (\d+)\]", row[0]).group(1)
             continue
+        elif row[0].strip().lower().startswith('exception'):
+            # We couldn't access this data
+            continue
 
         tag = f'sensor=PMBus_{module}_' + row[0].strip().replace(' ', '\ ')
         value = row[1].strip()
