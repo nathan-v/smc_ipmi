@@ -3,12 +3,14 @@ import argparse
 import csv
 import subprocess
 import re
+import string
 
 
 def get_ipmi_sensor(path, ip, user, password):
     ipmi_output = subprocess.run([path, ip, user, password, 'ipmi', 'sensor'], capture_output=True,
                                  universal_newlines=True)
-    return ipmi_output.stdout
+    printable = set(string.printable)
+    return ''.join(filter(lambda x: x in printable, ipmi_output.stdout))
 
 
 def parse_ipmi_sensor(ipmi_sensor_output: str, temp_unit: str):
@@ -54,7 +56,8 @@ def parse_ipmi_sensor(ipmi_sensor_output: str, temp_unit: str):
 
 def get_pminfo(path, ip, user, password):
     pminfo_output = subprocess.run([path, ip, user, password, 'pminfo'], capture_output=True, universal_newlines=True)
-    return pminfo_output.stdout
+    printable = set(string.printable)
+    return ''.join(filter(lambda x: x in printable, pminfo_output.stdout))
 
 
 def parse_pminfo(pm_output: str, temp_unit: str):
