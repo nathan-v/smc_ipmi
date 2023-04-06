@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import argparse
 import csv
 import subprocess
@@ -71,10 +71,11 @@ def parse_pminfo(pm_output: str, temp_unit: str):
             continue
         elif row[0].strip().lower().startswith('[slaveaddress') or \
                 row[0].strip().lower().startswith('[module'):
+
             # load power module index
             module = re.search("\[Module (\d+)\]", row[0]).group(1)
             continue
-        elif row[0].strip().lower().startswith('exception'):
+        elif row[0].strip().lower().startswith('exception') or row[0].strip().lower().startswith("can't"):
             # We couldn't access this data
             continue
 
