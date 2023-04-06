@@ -12,9 +12,15 @@ Clone this repo to the Telegraf host and configure Telegraf as shown below.
 `/etc/telegraf/telegraf.conf`
 ```
 [[inputs.exec]]
-   commands["/path/to/smc_ipmi.py /path/to/SCMIPMITool '192.168.1.2' 'ipmi_user' 'ipmi_pw' 'F'"]
+   commands = ["/path/to/smc_ipmi.py /path/to/SCMIPMITool '192.168.1.2' 'ipmi_user' 'ipmi_pw' 'F'"]
 
    data_format = "influx"
+   
+   timeout = "9s" # Optional: This keeps the system from waiting up to 30s for metrics
+
+  # Optional: This will add a hostname tag rather than referencing the metrics by IP.
+  [inputs.exec.tags]
+    hostname = "myhostname"
 ```
 
 ## Usage
