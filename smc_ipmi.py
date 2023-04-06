@@ -83,6 +83,8 @@ def parse_pminfo(pm_output: str, temp_unit: str):
             field = 'value={},unit="{}"'.format(temp, temp_unit)
         else:
             value = value.split(' ')
+            if value[0] == "N/A":
+                continue
             field = 'value={},unit="{}"'.format(value[0], value[1])
 
         points.append('smc_ipmi,{} {}'.format(tag, field))
