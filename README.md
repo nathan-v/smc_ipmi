@@ -29,6 +29,8 @@ This solution is much slower and much more CPU intensive but it collects more po
 ### ipmitool solution
 This solution is significantly faster but only collects total system power in watts instead of detailed per-PSU metrics. Also dropped support for temperature unit selection as the IMPI direct calls provide only C.
 
+On my monitoring VM (4 cores of Xeon CPU E5-2689 under ESXi 8) this solution reduced the metrics collection time from 5.5s to 0.5s and dropped CPU utilization (remotely monitoring 4 systems over IPMI) from 25% to 1%.
+
 `/etc/telegraf/telegraf.conf`
 ```
 [[inputs.exec]]
