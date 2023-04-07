@@ -80,8 +80,10 @@ def parse_pminfo(pm_output: str):
             value = line.split(":")[1].split()[0]
             unit = "W"
         elif line.strip().startswith("Power reading state is"):
-            if line.split(":")[1] == "activated":
+            if line.split(":")[1].strip() == "activated":
                 state = 1
+            else:
+                state = 0
         else:
             continue
 
