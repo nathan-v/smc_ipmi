@@ -86,7 +86,7 @@ def parse_pminfo(pm_output: str):
             continue
 
     tag = "sensor=DCMI_Power"
-    field = f"status={1} value={value},unit=\"{unit}\""
+    field = f"status={state},value={value},unit=\"{unit}\""
     points.append('smc_ipmi,{} {}'.format(tag, field))
     return points
 
