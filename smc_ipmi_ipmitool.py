@@ -2,11 +2,9 @@
 import argparse
 import csv
 import subprocess
-import re
-import string
 
 
-def get_ipmi_sensor(path, ip, user, password):
+def get_ipmi_sensor(ip, user, password):
     command = (
         "/usr/bin/ipmitool "
         "-I lan "
@@ -16,10 +14,9 @@ def get_ipmi_sensor(path, ip, user, password):
         "sdr"
     )
     ipmi_output = subprocess.run(command, capture_output=True, universal_newlines=True, shell=True)
-    printable = set(string.printable)
-    return ''.join(filter(lambda x: x in printable, ipmi_output.stdout))
+    return ipmi_output.stdout
 
-def parse_ipmi_sensor(ipmi_sensor_output: str, temp_unit: str):
+def parse_ipmi_sensor(ipmi_sensor_output: str):
     csv_reader = csv.reader(ipmi_sensor_output.splitlines(), delimiter='|')
     points = []
 
@@ -59,66 +56,54 @@ def parse_ipmi_sensor(ipmi_sensor_output: str, temp_unit: str):
     return points
 
 
-def get_pminfo(path, ip, user, password):
-    pminfo_output = subprocess.run([path, ip, user, password, 'pminfo'], capture_output=True, universal_newlines=True)
-    printable = set(string.printable)
-    return ''.join(filter(lambda x: x in printable, pminfo_output.stdout))
+def get_pminfo(ip, user, password):
+    command = (
+        "/usr/bin/ipmitool "
+        "-I lan "
+        f"-H {ip} "
+        f"-U {user} "
+        f"-P {password} "
+        "dcmi power reading"
+    )
+    pminfo_output = subprocess.run(command, capture_output=True, universal_newlines=True, shell=True)
+    return pminfo_output.stdout
 
 
-def parse_pminfo(pm_output: str, temp_unit: str):
-    csv_reader = csv.reader(pm_output.splitlines(), delimiter='|')
+def parse_pminfo(pm_output: str):
     points = []
+    value = None
+    unit = None
+    state = None
 
-    for row in csv_reader:
-        if len(row) <= 0 or row[0].strip().lower() == 'item' or row[0].strip().startswith('-') or \
-                row[0].strip().lower().startswith('pmbus') or row[0].strip().lower().startswith('pws'):
-            # skip non-data rows
-            continue
-        elif row[0].strip().lower().startswith('[slaveaddress') or \
-                row[0].strip().lower().startswith('[module'):
-
-            # load power module index
-            module = re.search("\[Module (\d+)\]", row[0]).group(1)
-            continue
-        elif row[0].strip().lower().startswith('exception') or row[0].strip().lower().startswith("can't"):
-            # We couldn't access this data
-            continue
-
-        tag = f'sensor=PMBus_{module}_' + row[0].strip().replace(' ', '\ ')
-        value = row[1].strip()
-        if row[0].strip().lower() == 'status':
-            status = '1' if row[1].strip().find('STATUS OK') > 0 else '0'
-            field = 'value=' + status
-        elif re.match('\d+C/\d+F', value):
-            temps = value.split('/')
-            temp = temps[0][:-1] if temp_unit == 'C' else temps[1][:-1]
-            field = 'value={},unit="{}"'.format(temp, temp_unit)
+    for line in pm_output.splitlines():
+        if line.strip().startswith("Instantaneous"):
+            value = line.split(":")[1].split()[0]
+            unit = "W"
+        elif line.strip().startswith("Power reading state is"):
+            if line.split(":")[1] == "activated":
+                state = 1
         else:
-            value = value.split(' ')
-            if value[0] == "N/A":
-                continue
-            field = 'value={},unit="{}"'.format(value[0], value[1])
+            continue
 
-        points.append('smc_ipmi,{} {}'.format(tag, field))
-
+    tag = "sensor=DCMI_Power"
+    field = f"status={1} value={value},unit=\"{unit}\""
+    points.append('smc_ipmi,{} {}'.format(tag, field))
     return points
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='SMCIpmi input plugin')
-    parser.add_argument('path', help='Path to SMCIpmi utility')
     parser.add_argument('ip', help='IP address of Supermicro host')
     parser.add_argument('user', help='Username')
     parser.add_argument('password', help='Password')
-    parser.add_argument('temp_unit', help='Temperature unit to use', choices=['C', 'F'])
 
     args = parser.parse_args()
 
-    ipmi_out = get_ipmi_sensor(args.path, args.ip, args.user, args.password)
-    pminfo_out = get_pminfo(args.path, args.ip, args.user, args.password)
+    ipmi_out = get_ipmi_sensor(args.ip, args.user, args.password)
+    pminfo_out = get_pminfo(args.ip, args.user, args.password)
 
-    ipmi_points = parse_ipmi_sensor(ipmi_out, args.temp_unit)
-    pmbus_points = parse_pminfo(pminfo_out, args.temp_unit)
+    ipmi_points = parse_ipmi_sensor(ipmi_out)
+    pmbus_points = parse_pminfo(pminfo_out)
 
     points = ipmi_points + pmbus_points
 
