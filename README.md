@@ -4,6 +4,11 @@ Python scripts to parse the output of [SMCIPMITool](https://www.supermicro.com/e
 ## Requirements
 The SMCIPMITool [[download]](https://www.supermicro.com/SwDownload/SwSelect_Free.aspx?cat=IPMI) must be installed on the Telegraf host.
 
+## Why?
+The value of this vs the Telegraf [IPMI input](https://github.com/influxdata/telegraf/blob/release-1.26/plugins/inputs/ipmi_sensor/README.md) is gathering the PMBus details. The SMCIPMITool solution will give you more information about the state of the power supplies as well as the ability to use F temperatures if you prefer. The ipmitool solution gives most of the same data as the Telegraf plugin but also adds in the DCMI power information.
+
+The biggest disadvantage of either of these solutions is performance; the host where this is running will have a more significant performance impact due to using Python (and Java as well when using SMCIPMITool) instead of the built in plugin.
+
 ## Install
 Clone this repo to the Telegraf host and configure Telegraf as shown below.
 
